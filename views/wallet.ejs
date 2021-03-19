@@ -1,0 +1,13 @@
+<h2>Wallet (<%= data.name %>) - Rs. <%= data.amount %>/-</h2>
+<form action="/load-amount" method="post">
+    <div>
+        <input type="number" name="amount" id="amount" placeholder="Amount">
+        <button type="submit">Load amount</button>
+    </div>
+</form>
+<form action="/withdraw-amount" method="post">
+    <div>
+        <input type="number" name="amount" id="amount" placeholder="Amount">
+        <button type="submit">Withdraw amount</button>
+    </div>
+</form>
