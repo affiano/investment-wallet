@@ -1,6 +1,12 @@
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('sys', 'root', 'password', {
-    host: 'localhost',
+
+const dbhost = process.env.NODE_ENV === 'production' ? process.env.PROD_MySQL_HOST : process.env.LOCAL_MySQL_HOST;
+const schema = process.env.NODE_ENV === 'production' ? process.env.PROD_MySQL_SCHEMA : process.env.LOCAL_MySQL_SCHEMA;
+const dbusername = process.env.NODE_ENV === 'production' ? process.env.PROD_MySQL_USERNAME : process.env.LOCAL_MySQL_USERNAME;
+const dbpassword = process.env.NODE_ENV === 'production' ? process.env.PROD_MySQL_PASSWORD : process.env.LOCAL_MySQL_PASSWORD;
+
+const sequelize = new Sequelize(schema, dbusername, dbpassword, {
+    host: dbhost,
     dialect: 'mysql',
     pool: {
         max: 5,
