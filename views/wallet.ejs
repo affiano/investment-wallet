@@ -101,7 +101,7 @@
         xmlHttp.onreadystatechange = function () {
             if (xmlHttp.readyState === 4) {
                 console.log('xmlHttp', xmlHttp);
-                var res = JSON.parse(xmlHttp2.responseText);
+                var res = JSON.parse(xmlHttp.responseText);
                 if (xmlHttp.status === 200) {
                     document.getElementById('amount').value = '';
                     document.getElementById('balance').innerHTML = res.amount;
