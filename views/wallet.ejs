@@ -1,13 +1,126 @@
-<h2>Wallet (<%= data.name %>) - Rs. <%= data.amount %>/-</h2>
-<form action="/load-amount" method="post">
-    <div>
-        <input type="number" name="amount" id="amount" placeholder="Amount">
-        <button type="submit">Load amount</button>
-    </div>
-</form>
-<form action="/withdraw-amount" method="post">
-    <div>
-        <input type="number" name="amount" id="amount" placeholder="Amount">
-        <button type="submit">Withdraw amount</button>
-    </div>
-</form>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function loadAmount(e) {
+        document.getElementById('success').innerHTML = '';
+        document.getElementById('error').innerHTML = '';
+        e.preventDefault();
+        var amount = document.getElementById('amount').value;
+        console.log(amount);
+        var url = '/generate-order-id';
+        var params = {
+            amount: amount
+        };
+        console.log(params);
+
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            console.log('xmlHttp.responseText', xmlHttp.responseText);
+            if (xmlHttp.readyState === 4) {
+                if (xmlHttp.status === 200) {
+                    var res = JSON.parse(xmlHttp.responseText);
+                    console.log('xmlHttp.readyState === 4: res', res);
+                    var options = {
+                        key: 'rzp_test_78tcA2o9ziswA0',
+                        currency: 'INR',
+                        name: 'Investment Wallet',
+                        order_id: res.id,
+                        handler: function (res) {
+                            console.log('payment response', res);
+
+                            var url = '/verify-payment';
+                            var xmlHttp1 = new XMLHttpRequest();
+                            xmlHttp1.onreadystatechange = function () {
+                                if (xmlHttp1.readyState === 4) {
+                                    if (xmlHttp1.status === 200) {
+                                        var res = JSON.parse(xmlHttp1.responseText);
+                                        if (res.status) {
+                                            var url = '/load-amount';
+                                            var xmlHttp2 = new XMLHttpRequest();
+                                            xmlHttp2.onreadystatechange = function () {
+                                                if (xmlHttp2.readyState === 4) {
+                                                    console.log('xmlHttp2', xmlHttp2);
+                                                    if (xmlHttp2.status === 200) {
+                                                        document.getElementById('amount').value = '';
+                                                        document.getElementById('balance').innerHTML = xmlHttp2.responseText;
+                                                        document.getElementById('success').innerHTML = 'Load Rs. ' + amount + '/- : Successful.';
+                                                    } else {
+                                                        document.getElementById('error').innerHTML = xmlHttp2.responseText;
+                                                    }
+                                                }
+                                            };
+
+                                            xmlHttp2.open('POST', url, true);
+                                            xmlHttp2.setRequestHeader('Content-Type', 'application/json');
+                                            xmlHttp2.send(JSON.stringify({
+                                                amount: amount
+                                            }));
+                                        } else {
+                                            document.getElementById('error').innerHTML = res;
+                                        }
+                                    } else {
+                                        document.getElementById('error').innerHTML = xmlHttp1.responseText;
+                                    }
+                                }
+                            };
+
+                            xmlHttp1.open('POST', url, true);
+                            xmlHttp1.setRequestHeader('Content-Type', 'application/json');
+                            xmlHttp1.send(JSON.stringify(res));
+                        }
+                    };
+                    var rzp = new Razorpay(options);
+                    rzp.open();
+                } else {
+                    document.getElementById('error').innerHTML = xmlHttp.responseText;
+                }
+            }
+        };
+
+        xmlHttp.open('POST', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send(JSON.stringify(params));
+    }
+
+    function withdrawAmount(e) {
+        document.getElementById('success').innerHTML = '';
+        document.getElementById('error').innerHTML = '';
+        e.preventDefault();
+        var amount = document.getElementById('amount').value;
+        console.log(amount);
+        var url = '/withdraw-amount';
+        var params = {
+            amount: amount
+        };
+        console.log(params);
+
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                console.log('xmlHttp', xmlHttp);
+                if (xmlHttp.status === 200) {
+                    document.getElementById('amount').value = '';
+                    document.getElementById('balance').innerHTML = xmlHttp.responseText;
+                    document.getElementById('success').innerHTML = 'Withdraw Rs. ' + amount + '/- : Successful.';
+                } else {
+                    document.getElementById('error').innerHTML = xmlHttp.responseText;
+                }
+            }
+        };
+
+        xmlHttp.open('POST', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send(JSON.stringify(params));
+    }
+</script>
+
+<h2>Wallet (<%= data.name %>) - Rs. <span id='balance'>
+            <%= data.amount %>
+        </span>/-</h2>
+<div>
+    <input type="number" name="amount" id="amount" placeholder="Amount">
+    <button onclick="loadAmount(event)">Load amount</button>
+    <button onclick="withdrawAmount(event)">Withdraw amount</button>
+</div>
+<div id="success" style="color:green;"></div>
+<div id="error" style="color:red;"></div>
