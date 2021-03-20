@@ -15,8 +15,9 @@ module.exports = {
         }
     }),
 
-    generateOrderId: async ({ body }) => new Promise((resolve, reject) => {
+    generateOrderId: async ({ body, user, Transaction }) => new Promise((resolve, reject) => {
         try {
+            const currency = 'INR';
             amountToAdd = Number(body.amount);
             const rzp = new Razorpay({
                 key_id: process.env.RAZORPAY_ID,
@@ -24,7 +25,7 @@ module.exports = {
             });
             const options = {
                 amount: amountToAdd * 100,  // amount in the smallest currency unit
-                currency: 'INR',
+                currency,
                 receipt: Date.now().toString(),
                 payment_capture: '1'
             };
@@ -33,7 +34,18 @@ module.exports = {
                     return reject(err);
                 }
                 console.log(order);
-                resolve(order);
+                const transactionId = Date.now();
+                await Transaction.create({
+                    id: transactionId,
+                    userId: user.id,
+                    amount: amountToAdd,
+                    currency,
+                    type: 'load',
+                    orderId: order.id
+                });
+                resolve(Object.assign(order, {
+                    transactionId
+                }));
             });
         } catch (e) {
             return reject(e);
@@ -56,9 +68,9 @@ module.exports = {
         }
     }),
 
-    loadAmount: async ({ User, user, amountToAdd }) => new Promise(async (resolve, reject) => {
+    loadAmount: async ({ User, Transaction, user, body }) => new Promise(async (resolve, reject) => {
         try {
-            amountToAdd = Number(amountToAdd);
+            amountToAdd = Number(body.amount);
             user = await User.findOne({
                 where: {
                     id: user.id
@@ -67,13 +79,22 @@ module.exports = {
             await user.update({
                 amount: user.amount + amountToAdd
             });
-            resolve(user.amount);
+            const transaction = await Transaction.findOne({
+                where: {
+                    id: body.transactionId
+                }
+            });
+            await transaction.update({
+                paymentId: body.razorpay_payment_id,
+                signature: body.razorpay_signature
+            });
+            resolve({ amount: user.amount, transactionId: body.transactionId });
         } catch (e) {
             return reject(e);
         }
     }),
 
-    withdrawAmount: async ({ User, user, amountToDeduct }) => new Promise(async (resolve, reject) => {
+    withdrawAmount: async ({ User, Transaction, user, amountToDeduct }) => new Promise(async (resolve, reject) => {
         try {
             amountToDeduct = Number(amountToDeduct);
             user = await User.findOne({
@@ -87,7 +108,14 @@ module.exports = {
             await user.update({
                 amount: user.amount - amountToDeduct
             });
-            resolve(user.amount);
+            const transactionId = Date.now();
+            await Transaction.create({
+                id: transactionId,
+                userId: user.id,
+                amount: amountToDeduct,
+                type: 'withdraw'
+            });
+            resolve({ amount: user.amount, transactionId });
         } catch (e) {
             return reject(e);
         }

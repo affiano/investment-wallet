@@ -19,54 +19,57 @@
             if (xmlHttp.readyState === 4) {
                 if (xmlHttp.status === 200) {
                     var res = JSON.parse(xmlHttp.responseText);
+                    console.log('get order id res', res);
                     console.log('xmlHttp.readyState === 4: res', res);
                     var options = {
                         key: 'rzp_test_78tcA2o9ziswA0',
                         currency: 'INR',
                         name: 'Investment Wallet',
                         order_id: res.id,
-                        handler: function (res) {
-                            console.log('payment response', res);
+                        handler: function (paymentResponse) {
+                            console.log('payment response', paymentResponse);
 
                             var url = '/verify-payment';
                             var xmlHttp1 = new XMLHttpRequest();
                             xmlHttp1.onreadystatechange = function () {
                                 if (xmlHttp1.readyState === 4) {
                                     if (xmlHttp1.status === 200) {
-                                        var res = JSON.parse(xmlHttp1.responseText);
-                                        if (res.status) {
+                                        var res1 = JSON.parse(xmlHttp1.responseText);
+                                        if (res1.status) {
                                             var url = '/load-amount';
                                             var xmlHttp2 = new XMLHttpRequest();
                                             xmlHttp2.onreadystatechange = function () {
                                                 if (xmlHttp2.readyState === 4) {
                                                     console.log('xmlHttp2', xmlHttp2);
+                                                    var res2 = JSON.parse(xmlHttp2.responseText);
                                                     if (xmlHttp2.status === 200) {
                                                         document.getElementById('amount').value = '';
-                                                        document.getElementById('balance').innerHTML = xmlHttp2.responseText;
-                                                        document.getElementById('success').innerHTML = 'Load Rs. ' + amount + '/- : Successful.';
+                                                        document.getElementById('balance').innerHTML = res2.amount;
+                                                        document.getElementById('success').innerHTML = 'Load Rs. ' + amount + '/- : Successful. Transaction Id: ' + res2.transactionId;
                                                     } else {
-                                                        document.getElementById('error').innerHTML = xmlHttp2.responseText;
+                                                        document.getElementById('error').innerHTML = JSON.parse(xmlHttp2.responseText).errorMessage;
                                                     }
                                                 }
                                             };
 
                                             xmlHttp2.open('POST', url, true);
                                             xmlHttp2.setRequestHeader('Content-Type', 'application/json');
-                                            xmlHttp2.send(JSON.stringify({
-                                                amount: amount
-                                            }));
+                                            xmlHttp2.send(JSON.stringify(Object.assign(paymentResponse, {
+                                                amount: amount,
+                                                transactionId: res.transactionId
+                                            })));
                                         } else {
-                                            document.getElementById('error').innerHTML = res;
+                                            document.getElementById('error').innerHTML = res1.errorMessage;
                                         }
                                     } else {
-                                        document.getElementById('error').innerHTML = xmlHttp1.responseText;
+                                        document.getElementById('error').innerHTML = JSON.parse(xmlHttp2.responseText).errorMessage;
                                     }
                                 }
                             };
 
                             xmlHttp1.open('POST', url, true);
                             xmlHttp1.setRequestHeader('Content-Type', 'application/json');
-                            xmlHttp1.send(JSON.stringify(res));
+                            xmlHttp1.send(JSON.stringify(paymentResponse));
                         }
                     };
                     var rzp = new Razorpay(options);
@@ -98,12 +101,13 @@
         xmlHttp.onreadystatechange = function () {
             if (xmlHttp.readyState === 4) {
                 console.log('xmlHttp', xmlHttp);
+                var res = JSON.parse(xmlHttp2.responseText);
                 if (xmlHttp.status === 200) {
                     document.getElementById('amount').value = '';
-                    document.getElementById('balance').innerHTML = xmlHttp.responseText;
-                    document.getElementById('success').innerHTML = 'Withdraw Rs. ' + amount + '/- : Successful.';
+                    document.getElementById('balance').innerHTML = res.amount;
+                    document.getElementById('success').innerHTML = 'Withdraw Rs. ' + amount + '/- : Successful. TransactionId: ' + res.transactionId;
                 } else {
-                    document.getElementById('error').innerHTML = xmlHttp.responseText;
+                    document.getElementById('error').innerHTML = JSON.parse(xmlHttp.responseText).errorMessage;
                 }
             }
         };

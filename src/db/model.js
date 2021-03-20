@@ -31,6 +31,10 @@ module.exports = ({ sequelize }) => {
                 type: Sequelize.BIGINT(20),
                 primaryKey: true
             },
+            userId: {
+                type: Sequelize.BIGINT(20),
+                allowNull: false
+            },
             amount: {
                 type: Sequelize.INTEGER,
                 allowNull: false
@@ -40,9 +44,18 @@ module.exports = ({ sequelize }) => {
                 allowNull: false,
                 defaultValue: 'INR'
             },
-            userId: {
-                type: Sequelize.BIGINT(20),
+            type: {
+                type: Sequelize.STRING,
                 allowNull: false
+            },
+            orderId: {
+                type: Sequelize.STRING
+            },
+            paymentId: {
+                type: Sequelize.STRING
+            },
+            signature: {
+                type: Sequelize.STRING
             }
         })
     }
