@@ -48,7 +48,7 @@ module.exports = ({ app, walletService, User, Transaction }) => {
     });
 
     app.post('/withdraw-amount', checkAuthenticated, (req, res) => {
-        walletService.withdrawAmount({ User, user: req.user, amountToDeduct: Number(req.body.amount) }).then(response => {
+        walletService.withdrawAmount({ User, Transaction, user: req.user, amountToDeduct: Number(req.body.amount) }).then(response => {
             console.log('withdrawAmount service response:', response);
             res.status(200).send(response);
         }).catch(error => {
