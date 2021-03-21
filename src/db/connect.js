@@ -20,4 +20,6 @@ sequelize.sync().then(() => {
     console.log('Connected to MySQL');
 });
 
-module.exports = require('./model')({ sequelize });
+module.exports = Object.assign(require('./model')({ sequelize }), {
+    sequelize
+});

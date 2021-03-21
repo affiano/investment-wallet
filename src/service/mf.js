@@ -47,11 +47,20 @@ module.exports = {
         }
     }),
 
-    buyFund: ({ body, Order, user, walletService, User, Transaction }) => new Promise(async (resolve, reject) => {
+    buyFund: ({ body, Order, user, walletService, User, Transaction, sequelize }) => new Promise(async (resolve, reject) => {
         try {
             const amount = Number(Number(body.amount).toFixed(2));
-            const orderId = Date.now();
-            const withdrawRes = await walletService.withdrawAmount({ user, User, Transaction, body: { amount, orderId, type: 'buy' } });
+            if (amount < 100) {
+                return reject(`Minimum amount should be 100.`);
+            }
+            user = await User.findOne({
+                where: {
+                    id: user.id
+                }
+            });
+            if (user.amount < amount) {
+                return reject(`Insufficient Balance!`);
+            }
             let res;
             try {
                 res = await axios.get(`https://api.mfapi.in/mf/${body.schemeCode}`);
@@ -61,21 +70,40 @@ module.exports = {
             }
             const nav = res.data.data[0].nav;
             const unit = Number((amount / nav).toFixed(5));
-            await Order.create({
+
+            const orderId = Date.now();
+            const order = {
                 id: orderId,
                 userId: user.id,
                 schemeCode: body.schemeCode,
                 unit,
                 buyValue: amount,
                 active: true
+            };
+            const transactionId = Date.now();
+            const newTransaction = {
+                id: transactionId,
+                userId: user.id,
+                amount,
+                type: 'buy',
+                fundOrderId: orderId
+            };
+
+            await sequelize.transaction(async (t) => {
+                await user.update({
+                    amount: user.amount - amount
+                }, { transaction: t });
+                await Transaction.create(newTransaction, { transaction: t });
+                await Order.create(order, { transaction: t });
             });
-            resolve({ orderId, transactionId: withdrawRes.transactionId, balance: withdrawRes.amount });
+
+            resolve({ orderId, transactionId, balance: user.amount });
         } catch (e) {
             return reject(e);
         }
     }),
 
-    sellFund: ({ body, Order, user, walletService, User, Transaction }) => new Promise(async (resolve, reject) => {
+    sellFund: ({ body, Order, user, walletService, User, Transaction, sequelize }) => new Promise(async (resolve, reject) => {
         try {
             const orderId = Number(body.fundOrderId);
             const order = await Order.findOne({
@@ -96,20 +124,33 @@ module.exports = {
             }
             const nav = res.data.data[0].nav;
             const amount = Number((order.unit * nav).toFixed(2));
-            await order.update({
-                sellValue: amount,
-                active: false
-            });
+
             const transactionId = Date.now();
-            await Transaction.create({
+            const transaction = {
                 id: transactionId,
                 userId: user.id,
                 amount,
                 type: 'sell',
                 fundOrderId: orderId
+            };
+            user = await User.findOne({
+                where: {
+                    id: user.id
+                }
             });
-            const loadRes = await walletService.loadAmount({ user, User, Transaction, body: { amount, type: 'sell' } });
-            resolve({ orderId, transactionId: loadRes.transactionId, balance: loadRes.amount });
+
+            await sequelize.transaction(async (t) => {
+                await order.update({
+                    sellValue: amount,
+                    active: false
+                }, { transaction: t });
+                await Transaction.create(transaction, { transaction: t });
+                await user.update({
+                    amount: user.amount + amount
+                }, { transaction: t });
+            });
+
+            resolve({ orderId, transactionId, balance: user.amount });
         } catch (e) {
             return reject(e);
         }

@@ -79,11 +79,11 @@ module.exports = ({ sequelize }) => {
                 allowNull: false
             },
             buyValue: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.FLOAT,
                 allowNull: false
             },
             sellValue: {
-                type: Sequelize.INTEGER
+                type: Sequelize.FLOAT
             },
             active: {
                 type: Sequelize.BOOLEAN,

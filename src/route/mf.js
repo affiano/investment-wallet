@@ -1,6 +1,6 @@
 const { checkAuthenticated } = require('./../lib/middleware');
 
-module.exports = ({ app, mfService, Order, walletService, User, Transaction }) => {
+module.exports = ({ app, mfService, Order, walletService, User, Transaction, sequelize }) => {
     app.get('/buy-fund', checkAuthenticated, (req, res) => {
         res.render('mf.ejs');
     });
@@ -30,7 +30,7 @@ module.exports = ({ app, mfService, Order, walletService, User, Transaction }) =
     });
 
     app.post('/buy-fund', checkAuthenticated, (req, res) => {
-        mfService.buyFund({ body: req.body, Order, user: req.user, walletService, User, Transaction }).then(response => {
+        mfService.buyFund({ body: req.body, Order, user: req.user, walletService, User, Transaction, sequelize }).then(response => {
             console.log('buyFund service response:', response);
             res.status(200).send({ data: response });
         }).catch(error => {
@@ -40,7 +40,7 @@ module.exports = ({ app, mfService, Order, walletService, User, Transaction }) =
     });
 
     app.post('/sell-fund', checkAuthenticated, (req, res) => {
-        mfService.sellFund({ body: req.body, Order, user: req.user, walletService, User, Transaction }).then(response => {
+        mfService.sellFund({ body: req.body, Order, user: req.user, walletService, User, Transaction, sequelize }).then(response => {
             console.log('sellFund service response:', response);
             res.status(200).send({ data: response });
         }).catch(error => {
