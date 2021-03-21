@@ -1,0 +1,81 @@
+<script>
+    function buyFund(schemeCode) {
+        var amount = document.getElementById('amount-' + schemeCode).value;
+        if (isNaN(parseInt(amount))) {
+            return alert('Enter valid amount');
+        }
+        const params = {
+            schemeCode: schemeCode,
+            amount: amount
+        };
+
+        var url = '/buy-fund';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                var res = JSON.parse(xmlHttp.responseText);
+                if (xmlHttp.status === 200) {
+                    alert(res);
+                } else {
+                    alert(res.errorMessage);
+                }
+            }
+        };
+
+        xmlHttp.open('POST', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send(JSON.stringify(params));
+    }
+
+    function loadInvestPage() {
+        var url = '/get-mf-data';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                var res = JSON.parse(xmlHttp.responseText);
+                if (xmlHttp.status === 200) {
+                    var mful = document.getElementsByClassName('mf')[0];
+                    for (var i = 0; i < res.data.length; i++) {
+                        var mfObj = res.data[i];
+
+                        var mfDets = document.createElement('p');
+                        mfDets.innerHTML = '<b>Fund House:</b> ' + mfObj.fund_house + '<br />';
+                        mfDets.innerHTML += '<b>Scheme Type:</b> ' + mfObj.scheme_type + '<br />';
+                        mfDets.innerHTML += '<b>Scheme Category:</b> ' + mfObj.scheme_category + '<br />';
+                        mfDets.innerHTML += '<b>Scheme Code:</b> ' + mfObj.scheme_code + '<br />';
+                        mfDets.innerHTML += '<b>Scheme Name:</b> ' + mfObj.scheme_name + '<br />';
+                        mful.appendChild(mfDets);
+
+                        var mfInput = document.createElement('input');
+                        mfInput.setAttribute('type', 'number');
+                        mfInput.setAttribute('placeholder', 'Enter Amount');
+                        mfInput.id = 'amount-' + mfObj.scheme_code;
+                        mful.appendChild(mfInput);
+
+                        var mfButton = document.createElement('button');
+                        mfButton.setAttribute('data-scheme_code', mfObj.scheme_code);
+                        mfButton.innerHTML = 'Buy Fund';
+                        mfButton.addEventListener('click', function (event) {
+                            buyFund(event.target.dataset.scheme_code);
+                        });
+                        mful.appendChild(mfButton);
+                    }
+                } else {
+                    alert(res.errorMessage);
+                }
+            }
+        }
+
+        xmlHttp.open('GET', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send();
+    }
+</script>
+
+<body onload="loadInvestPage()">
+    <div>
+        <ul class="mf">
+
+        </ul>
+    </div>
+</body>

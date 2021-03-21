@@ -1,0 +1,94 @@
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+    }
+</style>
+<script>
+    function convertISODateToLocalDate(dtStr) {
+        var dt = new Date(dtStr);
+        return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString();
+    }
+
+    function loadTransactionsPage() {
+        var url = '/get-transactions';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                var res = JSON.parse(xmlHttp.responseText);
+                if (xmlHttp.status === 200) {
+                    var txnTbl = document.getElementsByClassName('txns')[0];
+                    for (var i = 0; i < res.data.length; i++) {
+                        var txnObj = res.data[i];
+
+                        let details, credit, debit;
+                        if (txnObj.type === 'load') {
+                            details = `Load amount.`;
+                            credit = txnObj.amount;
+                            debit = '';
+                        } else if (txnObj.type === 'withdraw') {
+                            details = `Withdraw amount.`;
+                            credit = '';
+                            debit = txnObj.amount;
+                        } else if (txnObj.type === 'buy') {
+                            details = `Buy fund. Order Id: ${txnObj.fundOrderId}`;
+                            credit = '';
+                            debit = txnObj.amount;
+                        } else if (txnObj.type === 'sell') {
+                            details = `Sell fund. Order Id: ${txnObj.fundOrderId}`;
+                            credit = txnObj.amount;
+                            debit = '';
+                        }
+
+                        var tr = document.createElement('tr');
+
+                        var tdTxnId = document.createElement('td');
+                        tdTxnId.innerHTML = txnObj.id;
+                        tr.appendChild(tdTxnId);
+
+                        var tdDate = document.createElement('td');
+                        tdDate.innerHTML = convertISODateToLocalDate(txnObj.createdAt);
+                        tr.appendChild(tdDate);
+
+                        var tdDetails = document.createElement('td');
+                        tdDetails.innerHTML = details;
+                        tr.appendChild(tdDetails);
+
+                        var tdCredit = document.createElement('td');
+                        tdCredit.style.color = 'green';
+                        tdCredit.innerHTML = credit;
+                        tr.appendChild(tdCredit);
+
+                        var tdDebit = document.createElement('td');
+                        tdDebit.style.color = 'red';
+                        tdDebit.innerHTML = debit;
+                        tr.appendChild(tdDebit);
+
+                        txnTbl.appendChild(tr);
+                    }
+                } else {
+                    alert(res.errorMessage);
+                }
+            }
+        }
+
+        xmlHttp.open('GET', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send();
+    }
+</script>
+
+<body onload="loadTransactionsPage()">
+    <div>
+        <table class="txns">
+            <tr>
+                <td>Transaction Id</td>
+                <td>Date</td>
+                <td>Details</td>
+                <td>Credit</td>
+                <td>Debit</td>
+            </tr>
+        </table>
+    </div>
+</body>

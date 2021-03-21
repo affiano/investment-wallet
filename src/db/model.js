@@ -21,9 +21,9 @@ module.exports = ({ sequelize }) => {
                 allowNull: false
             },
             amount: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.FLOAT,
                 allowNull: false,
-                defaultValue: '0'
+                defaultValue: 0
             }
         }),
         Transaction: sequelize.define('transaction', {
@@ -36,7 +36,7 @@ module.exports = ({ sequelize }) => {
                 allowNull: false
             },
             amount: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.FLOAT,
                 allowNull: false
             },
             currency: {
@@ -48,7 +48,7 @@ module.exports = ({ sequelize }) => {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            orderId: {
+            paymentOrderId: {
                 type: Sequelize.STRING
             },
             paymentId: {
@@ -56,7 +56,40 @@ module.exports = ({ sequelize }) => {
             },
             signature: {
                 type: Sequelize.STRING
+            },
+            fundOrderId: {
+                type: Sequelize.BIGINT(20)
+            }
+        }),
+        Order: sequelize.define('order', {
+            id: {
+                type: Sequelize.BIGINT(20),
+                primaryKey: true
+            },
+            userId: {
+                type: Sequelize.BIGINT(20),
+                allowNull: false
+            },
+            schemeCode: {
+                type: Sequelize.INTEGER,
+                allowNull: false
+            },
+            unit: {
+                type: Sequelize.FLOAT,
+                allowNull: false
+            },
+            buyValue: {
+                type: Sequelize.INTEGER,
+                allowNull: false
+            },
+            sellValue: {
+                type: Sequelize.INTEGER
+            },
+            active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true
             }
         })
-    }
+    };
 };

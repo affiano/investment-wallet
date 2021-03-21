@@ -7,6 +7,9 @@
         e.preventDefault();
         var amount = document.getElementById('amount').value;
         console.log(amount);
+        if (isNaN(parseInt(amount))) {
+            return alert('Enter valid amount');
+        }
         var url = '/generate-order-id';
         var params = {
             amount: amount
@@ -91,6 +94,9 @@
         e.preventDefault();
         var amount = document.getElementById('amount').value;
         console.log(amount);
+        if (isNaN(parseInt(amount))) {
+            return alert('Enter valid amount');
+        }
         var url = '/withdraw-amount';
         var params = {
             amount: amount
@@ -126,5 +132,6 @@
     <button onclick="loadAmount(event)">Load amount</button>
     <button onclick="withdrawAmount(event)">Withdraw amount</button>
 </div>
+<br />
 <div id="success" style="color:green;"></div>
 <div id="error" style="color:red;"></div>

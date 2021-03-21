@@ -1,4 +1,4 @@
-const { checkAuthenticated, checkNotAuthenticated } = require('./../lib/middleware');
+const { checkAuthenticated } = require('./../lib/middleware');
 
 module.exports = ({ app, walletService, User, Transaction }) => {
     app.post('/check-balance', checkAuthenticated, (req, res) => {
@@ -14,6 +14,20 @@ module.exports = ({ app, walletService, User, Transaction }) => {
             console.error(error);
             res.redirect('/');
             // return res.status(400).send({ errorMessage: JSON.stringify(error) });
+        });
+    });
+
+    app.get('/transactions', checkAuthenticated, (req, res) => {
+        res.render('transactions.ejs');
+    });
+
+    app.get('/get-transactions', checkAuthenticated, (req, res) => {
+        walletService.getTransactions({ Transaction, user: req.user }).then(response => {
+            console.log('getTransactions service response:', response);
+            res.status(200).send({ data: response });
+        }).catch(error => {
+            console.error(error);
+            res.status(400).send({ errorMessage: JSON.stringify(error) });
         });
     });
 
@@ -48,7 +62,7 @@ module.exports = ({ app, walletService, User, Transaction }) => {
     });
 
     app.post('/withdraw-amount', checkAuthenticated, (req, res) => {
-        walletService.withdrawAmount({ User, Transaction, user: req.user, amountToDeduct: Number(req.body.amount) }).then(response => {
+        walletService.withdrawAmount({ User, Transaction, user: req.user, body: req.body }).then(response => {
             console.log('withdrawAmount service response:', response);
             res.status(200).send(response);
         }).catch(error => {
