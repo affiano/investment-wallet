@@ -1,5 +1,6 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 
 module.exports = {
     getAmount: async ({ User, user }) => new Promise(async (resolve, reject) => {
@@ -15,10 +16,35 @@ module.exports = {
         }
     }),
 
+    getTransactions: ({ Transaction, user }) => new Promise(async (resolve, reject) => {
+        try {
+            const transactions = await Transaction.findAll({
+                where: {
+                    userId: user.id,
+                    [Op.or]: [
+                        {
+                            type: {
+                                [Op.ne]: 'load'
+                            }
+                        },
+                        {
+                            paymentOrderId: {
+                                [Op.not]: null
+                            }
+                        }
+                    ]
+                }
+            });
+            resolve(transactions);
+        } catch (e) {
+            return reject(e);
+        }
+    }),
+
     generateOrderId: async ({ body, user, Transaction }) => new Promise((resolve, reject) => {
         try {
             const currency = 'INR';
-            amountToAdd = Number(body.amount);
+            amountToAdd = Number(Number(body.amount).toFixed(2));
             const rzp = new Razorpay({
                 key_id: process.env.RAZORPAY_ID,
                 key_secret: process.env.RAZORPAY_SECRET
@@ -41,7 +67,7 @@ module.exports = {
                     amount: amountToAdd,
                     currency,
                     type: 'load',
-                    orderId: order.id
+                    paymentOrderId: order.id
                 });
                 resolve(Object.assign(order, {
                     transactionId
@@ -68,35 +94,40 @@ module.exports = {
         }
     }),
 
-    loadAmount: async ({ User, Transaction, user, body }) => new Promise(async (resolve, reject) => {
+    loadAmount: async ({ User, Transaction, user, body, sequelize }) => new Promise(async (resolve, reject) => {
         try {
-            amountToAdd = Number(body.amount);
+            amountToAdd = Number(Number(body.amount).toFixed(2));
+            let transaction;
+            transaction = await Transaction.findOne({
+                where: {
+                    id: body.transactionId
+                }
+            });
             user = await User.findOne({
                 where: {
                     id: user.id
                 }
             });
-            await user.update({
-                amount: user.amount + amountToAdd
+
+            await sequelize.transaction(async (t) => {
+                await transaction.update({
+                    paymentId: body.razorpay_payment_id,
+                    signature: body.razorpay_signature
+                }, { transaction: t });
+                await user.update({
+                    amount: user.amount + amountToAdd
+                }, { transaction: t });
             });
-            const transaction = await Transaction.findOne({
-                where: {
-                    id: body.transactionId
-                }
-            });
-            await transaction.update({
-                paymentId: body.razorpay_payment_id,
-                signature: body.razorpay_signature
-            });
+
             resolve({ amount: user.amount, transactionId: body.transactionId });
         } catch (e) {
             return reject(e);
         }
     }),
 
-    withdrawAmount: async ({ User, Transaction, user, amountToDeduct }) => new Promise(async (resolve, reject) => {
+    withdrawAmount: async ({ User, Transaction, user, body, sequelize }) => new Promise(async (resolve, reject) => {
         try {
-            amountToDeduct = Number(amountToDeduct);
+            amountToDeduct = Number(Number(body.amount).toFixed(2));
             user = await User.findOne({
                 where: {
                     id: user.id
@@ -105,16 +136,21 @@ module.exports = {
             if (user.amount < amountToDeduct) {
                 return reject(`Insufficient Balance!`);
             }
-            await user.update({
-                amount: user.amount - amountToDeduct
-            });
             const transactionId = Date.now();
-            await Transaction.create({
+            const newTransaction = {
                 id: transactionId,
                 userId: user.id,
                 amount: amountToDeduct,
                 type: 'withdraw'
+            };
+
+            await sequelize.transaction(async (t) => {
+                await user.update({
+                    amount: user.amount - amountToDeduct
+                }, { transaction: t });
+                await Transaction.create(newTransaction, { transaction: t });
             });
+
             resolve({ amount: user.amount, transactionId });
         } catch (e) {
             return reject(e);

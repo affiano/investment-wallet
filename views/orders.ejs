@@ -1,0 +1,132 @@
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+    }
+</style>
+<script>
+    function convertISODateToLocalDate(dtStr) {
+        var dt = new Date(dtStr);
+        return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString();
+    }
+
+    function sellFund(orderId) {
+        const params = {
+            fundOrderId: orderId
+        };
+
+        var url = '/sell-fund';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                var res = JSON.parse(xmlHttp.responseText);
+                if (xmlHttp.status === 200) {
+                    alert(res);
+                } else {
+                    alert(res.errorMessage);
+                }
+            }
+        };
+
+        xmlHttp.open('POST', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send(JSON.stringify(params));
+    }
+
+    function loadOrdersPage() {
+        var url = '/get-orders';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4) {
+                var res = JSON.parse(xmlHttp.responseText);
+                if (xmlHttp.status === 200) {
+                    var ordersTbl = document.getElementsByClassName('orders')[0];
+                    for (var i = 0; i < res.data.length; i++) {
+                        var orderObj = res.data[i];
+
+                        var tr = document.createElement('tr');
+
+                        var tdOrderId = document.createElement('td');
+                        tdOrderId.innerHTML = orderObj.id;
+                        tr.appendChild(tdOrderId);
+
+                        var tdDate = document.createElement('td');
+                        tdDate.innerHTML = convertISODateToLocalDate(orderObj.createdAt);
+                        tr.appendChild(tdDate);
+
+                        var tdSchemeCode = document.createElement('td');
+                        tdSchemeCode.innerHTML = orderObj.schemeCode;
+                        tr.appendChild(tdSchemeCode);
+
+                        var tdUnit = document.createElement('td');
+                        tdUnit.innerHTML = orderObj.unit;
+                        tr.appendChild(tdUnit);
+
+                        var tdBuyValue = document.createElement('td');
+                        tdBuyValue.innerHTML = orderObj.buyValue;
+                        tr.appendChild(tdBuyValue);
+
+                        var tdCurrentValue = document.createElement('td');
+                        tdCurrentValue.innerHTML = orderObj.currentValue ? orderObj.currentValue : '';
+                        tr.appendChild(tdCurrentValue);
+
+                        var tdSellValue = document.createElement('td');
+                        tdSellValue.innerHTML = orderObj.sellValue ? orderObj.sellValue : 'NA';
+                        tr.appendChild(tdSellValue);
+
+                        var tdProfitLoss = document.createElement('td');
+                        tdProfitLoss.innerHTML = orderObj.sellValue
+                            ? (orderObj.sellValue - orderObj.buyValue)
+                            : 'NA';
+                        const profit = parseFloat(tdProfitLoss.innerHTML);
+                        tdProfitLoss.style.color = isNaN(profit)
+                            ? 'black'
+                            : (profit >= 0 ? 'green' : 'red');
+                        tr.appendChild(tdProfitLoss);
+
+                        const sellBtn = document.createElement('button');
+                        sellBtn.setAttribute('data-orderid', orderObj.id);
+                        sellBtn.addEventListener('click', function (event) {
+                            sellFund(event.target.dataset.orderid);
+                        });
+                        sellBtn.innerHTML = 'Sell Now';
+
+                        var span = document.createElement('span');
+                        span.innerHTML = 'Sold';
+
+                        var tdSellButton = document.createElement('td');
+                        tdSellButton.appendChild(orderObj.sellValue ? span : sellBtn);
+                        tr.appendChild(tdSellButton);
+
+                        ordersTbl.appendChild(tr);
+                    }
+                } else {
+                    alert(res.errorMessage);
+                }
+            }
+        }
+
+        xmlHttp.open('GET', url, true);
+        xmlHttp.setRequestHeader('Content-Type', 'application/json');
+        xmlHttp.send();
+    }
+</script>
+
+<body onload="loadOrdersPage()">
+    <div>
+        <table class="orders">
+            <tr>
+                <td>Order Id</td>
+                <td>Date</td>
+                <td>Scheme Code</td>
+                <td>Units Bought</td>
+                <td>Buy Value</td>
+                <td>Current Value</td>
+                <td>Sell Value</td>
+                <td>Profit/Loss</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+</body>
