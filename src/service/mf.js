@@ -41,7 +41,7 @@ module.exports = {
             }
             (await Promise.all(promises)).forEach((res, i) => {
                 const nav = res.data.data[0].nav;
-                const currentValue = Number((nav * order.unit).toFixed(2));
+                const currentValue = Number((nav * orders[i].unit).toFixed(2));
                 orders[i].dataValues.currentValue = currentValue;
             });
             resolve(orders);
