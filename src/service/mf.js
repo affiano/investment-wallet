@@ -29,24 +29,48 @@ module.exports = {
                     userId: user.id
                 }
             });
+            let promises = [];
             for (let i = 0; i < orders.length; i++) {
                 const order = orders[i];
-                let res;
                 try {
-                    res = await axios.get(`https://api.mfapi.in/mf/${order.schemeCode}`);
+                    promises.push(axios.get(`https://api.mfapi.in/mf/${order.schemeCode}`));
                 } catch (error) {
                     console.error(error);
                     continue;
                 }
+            }
+            (await Promise.all(promises)).forEach((res, i) => {
                 const nav = res.data.data[0].nav;
                 const currentValue = Number((nav * order.unit).toFixed(2));
-                order.dataValues.currentValue = currentValue;
-            }
+                orders[i].dataValues.currentValue = currentValue;
+            });
             resolve(orders);
         } catch (e) {
             return reject(e);
         }
     }),
+
+    // getCurrentValueForOrders: ({ ordersStr }) => new Promise(async (resolve, reject) => {
+    //     try {
+    //         orders = JSON.parse(ordersStr);
+    //         for (let i = 0; i < orders.length; i++) {
+    //             const order = orders[i];
+    //             let res;
+    //             try {
+    //                 res = await axios.get(`https://api.mfapi.in/mf/${order.schemeCode}`);
+    //             } catch (error) {
+    //                 console.error(error);
+    //                 continue;
+    //             }
+    //             const nav = res.data.data[0].nav;
+    //             const currentValue = Number((nav * order.unit).toFixed(2));
+    //             order.dataValues.currentValue = currentValue;
+    //         }
+    //         resolve(orders);
+    //     } catch (e) {
+    //         return reject(e);
+    //     }
+    // }),
 
     buyFund: ({ body, Order, user, walletService, User, Transaction, sequelize }) => new Promise(async (resolve, reject) => {
         try {
