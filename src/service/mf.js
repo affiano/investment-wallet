@@ -4,17 +4,18 @@ const data = require('./../data/mf.js');
 module.exports = {
     getMFData: () => new Promise(async (resolve, reject) => {
         try {
-            const dataToResolve = [];
+            let promises = [];
             for (let i = 0; i < data.ids.length; i++) {
                 mfid = data.ids[i];
                 let res;
                 try {
-                    res = await axios.get(`https://api.mfapi.in/mf/${mfid}`);
-                    dataToResolve.push(res.data.meta);
+                    res = axios.get(`https://api.mfapi.in/mf/${mfid}`);
+                    promises.push(res);
                 } catch (error) {
                     console.error(error);
                 }
             }
+            const dataToResolve = (await Promise.all(promises)).map(res => res.data.meta);
             resolve(dataToResolve);
         } catch (e) {
             return reject(e);
